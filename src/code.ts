@@ -29,11 +29,13 @@ interface EventDetails {
   location: string;
 }
 
+const GROUPME_ID_REGEX = /\[GroupMe Event ID: ([^\]]+)\]/;
+
 /**
  * Main function to sync GroupMe events to Google Calendar
  * Run this function manually or set up a trigger
  */
-function syncGroupMeCalendar(): void {
+const syncGroupMeCalendar = () => {
   try {
     console.log('Starting GroupMe calendar sync...');
 
@@ -41,8 +43,8 @@ function syncGroupMeCalendar(): void {
     const groupId = properties.getProperty("GROUPME_GROUP_ID");
     const accessToken = properties.getProperty("GROUPME_ACCESS_TOKEN");
     const calendarId = properties.getProperty("GOOGLE_CALENDAR_ID");
-    const syncDaysAhead = parseInt(properties.getProperty("SYNC_DAYS_AHEAD") || "30");
-    const eventPrefix = properties.getProperty("EVENT_PREFIX") || "[GroupMe] ";
+    const syncDaysAhead = parseInt(properties.getProperty("SYNC_DAYS_AHEAD") ?? "30");
+    const eventPrefix = properties.getProperty("EVENT_PREFIX") ?? "[GroupMe] ";
     
     if (!groupId || !accessToken || !calendarId) {
       throw new Error('Missing required configuration. Please set GROUPME_GROUP_ID, GROUPME_ACCESS_TOKEN, and GOOGLE_CALENDAR_ID.');
@@ -72,11 +74,11 @@ function syncGroupMeCalendar(): void {
 /**
  * Fetch events from GroupMe API
  */
-function getGroupMeEvents(groupId: string, accessToken: string): GroupMeEvent[] {
+const getGroupMeEvents = (groupId: string, accessToken: string) => {
   const url = `https://api.groupme.com/v3/conversations/${groupId}/events/list`;
   
   const options: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
-    method: 'GET',
+    method: 'get',
     headers: {
       'X-Access-Token': accessToken,
       'Content-Type': 'application/json'
@@ -88,7 +90,7 @@ function getGroupMeEvents(groupId: string, accessToken: string): GroupMeEvent[] 
     const responseData: GroupMeResponse = JSON.parse(response.getContentText());
     
     if (response.getResponseCode() !== 200) {
-      throw new Error(`GroupMe API error: ${responseData.meta?.errors?.[0] || 'Unknown error'}`);
+      throw new Error(`GroupMe API error: ${responseData.meta?.errors?.[0] ?? 'Unknown error'}`);
     }
     
     return responseData.response?.events || [];
@@ -102,12 +104,12 @@ function getGroupMeEvents(groupId: string, accessToken: string): GroupMeEvent[] 
 /**
  * Sync GroupMe events to Google Calendar
  */
-function syncEvents(
+const syncEvents = (
   groupMeEvents: GroupMeEvent[], 
   calendar: GoogleAppsScript.Calendar.Calendar, 
   syncDaysAhead: number, 
   eventPrefix: string
-): void {
+) => {
   const now = new Date();
   const futureDate = new Date(now.getTime() + (syncDaysAhead * 24 * 60 * 60 * 1000));
   
@@ -136,12 +138,12 @@ function syncEvents(
         return;
       }
       
-      const title = eventPrefix + (groupMeEvent.name || 'Untitled Event');
+      const title = eventPrefix + (groupMeEvent.name ?? 'Untitled Event');
       const description = buildEventDescription(groupMeEvent);
-      const location = groupMeEvent.location?.name || '';
+      const location = groupMeEvent.location?.name ?? '';
       
       // Check if event already exists
-      const existingEvent = findExistingEvent(existingGroupMeEvents, eventId, title);
+      const existingEvent = findExistingEvent(existingGroupMeEvents, eventId);
       
       if (existingEvent) {
         // Update existing event if needed
@@ -177,7 +179,7 @@ function syncEvents(
 /**
  * Build event description from GroupMe event data
  */
-function buildEventDescription(groupMeEvent: GroupMeEvent): string {
+const buildEventDescription = (groupMeEvent: GroupMeEvent) => {
   let description = '';
   
   if (groupMeEvent.description) {
@@ -200,11 +202,10 @@ function buildEventDescription(groupMeEvent: GroupMeEvent): string {
 /**
  * Find existing event by GroupMe ID or title
  */
-function findExistingEvent(
+const findExistingEvent = (
   existingEvents: GoogleAppsScript.Calendar.CalendarEvent[], 
-  groupMeId: string, 
-  title: string
-): GoogleAppsScript.Calendar.CalendarEvent | undefined {
+  groupMeId: string
+) => {
   return existingEvents.find(event => {
     const description = event.getDescription();
     return description.includes(`[GroupMe Event ID: ${groupMeId}]`);
@@ -214,10 +215,10 @@ function findExistingEvent(
 /**
  * Update existing event if details have changed
  */
-function updateEventIfNeeded(
+const updateEventIfNeeded = (
   event: GoogleAppsScript.Calendar.CalendarEvent, 
   newDetails: EventDetails
-): void {
+) => {
   let updated = false;
 
   console.log(`Existing event: ${event.getTitle()} - ${event.getStartTime()} to ${event.getEndTime()}`);
@@ -242,7 +243,8 @@ function updateEventIfNeeded(
   const newDesc = newDetails.description.split('[GroupMe Event ID:')[0].trim();
   
   if (currentDesc !== newDesc) {
-    const groupMeIdMatch = event.getDescription().match(/\[GroupMe Event ID: ([^\]]+)\]/);
+    
+    const groupMeIdMatch = GROUPME_ID_REGEX.exec(event.getDescription());
     const fullDescription = newDetails.description + 
       (groupMeIdMatch ? `\n\n[GroupMe Event ID: ${groupMeIdMatch[1]}]` : '');
     event.setDescription(fullDescription);
@@ -257,13 +259,13 @@ function updateEventIfNeeded(
 /**
  * Remove Google Calendar events that no longer exist in GroupMe
  */
-function cleanupRemovedEvents(
+const cleanupRemovedEvents = (
   existingEvents: GoogleAppsScript.Calendar.CalendarEvent[], 
   processedEventIds: Set<string>
-): void {
+) => {
   existingEvents.forEach(event => {
     const description = event.getDescription();
-    const match = description.match(/\[GroupMe Event ID: ([^\]]+)\]/);
+    const match = GROUPME_ID_REGEX.exec(description);
     
     if (match) {
       const groupMeId = match[1];

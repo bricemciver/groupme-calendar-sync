@@ -1,0 +1,46 @@
+name: Deploy to Google Apps Script
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: TypeScript type check
+      run: npx tsc --noEmit
+    
+    - name: Setup clasp credentials
+      env:
+        CLASP_CREDENTIALS: ${{ secrets.CLASP_CREDENTIALS }}
+        CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+      run: |
+        echo "$CLASP_CREDENTIALS" > ~/.clasprc.json
+        echo "$CLASPRC_JSON" > .clasp.json
+    
+    - name: Deploy to Google Apps Script
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: |
+        npx clasp push --force
+    
+    - name: Test deployment (PR only)
+      if: github.event_name == 'pull_request'
+      run: |
+        echo "PR detected - skipping deployment, only running type checks"
+        npx tsc --noEmit

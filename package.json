@@ -10,7 +10,9 @@
     "logs": "clasp logs",
     "pull": "clasp pull",
     "create": "clasp create --type standalone --rootDir ./src",
-    "login": "clasp login"
+    "login": "clasp login",
+    "type-check": "tsc --noEmit",
+    "build": "tsc --noEmit && echo 'TypeScript compilation successful'"
   },
   "keywords": [
     "google-apps-script",

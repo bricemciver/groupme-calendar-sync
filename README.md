@@ -93,9 +93,9 @@ Set up a time-driven trigger:
 
 ## Development
 
-### Watch Mode
+### Local Development
 
-Automatically push changes as you develop:
+Watch mode - automatically push changes as you develop:
 
 ```bash
 npm run watch
@@ -116,6 +116,16 @@ Pull changes from Google Apps Script:
 ```bash
 npm run pull
 ```
+
+### Continuous Deployment
+
+This project includes GitHub Actions for automatic deployment:
+
+- **On push to main**: Automatically builds and deploys to Google Apps Script
+- **On pull requests**: Runs type checks without deploying
+- **TypeScript validation**: Ensures code compiles before deployment
+
+To set up automatic deployment, see the [GitHub Secrets Setup Guide](docs/github-secrets-setup.md) for configuring the required secrets.
 
 ## Getting GroupMe API Credentials
 

@@ -1,0 +1,29 @@
+{
+  "name": "groupme-calendar-sync",
+  "version": "0.0.1",
+  "description": "Sync GroupMe events to Google Calendar using Google Apps Script",
+  "main": "code.ts",
+  "scripts": {
+    "deploy": "clasp push",
+    "watch": "clasp push --watch",
+    "open": "clasp open",
+    "logs": "clasp logs",
+    "pull": "clasp pull",
+    "create": "clasp create --type standalone --rootDir ./src",
+    "login": "clasp login"
+  },
+  "keywords": [
+    "google-apps-script",
+    "groupme",
+    "calendar",
+    "sync",
+    "typescript"
+  ],
+  "author": "Brice McIver",
+  "license": "MIT",
+  "devDependencies": {
+    "@google/clasp": "^2.4.2",
+    "@types/google-apps-script": "^1.0.83",
+    "typescript": "^5.0.0"
+  }
+}
